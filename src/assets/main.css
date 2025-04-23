@@ -1,0 +1,52 @@
+@import "bootstrap-icons";
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700&display=swap');
+
+body[data-bs-theme="dark"] {
+  --bs-body-bg: #121212;
+  /*--bs-body-color: #3ac824;*/
+  --bs-card-bg: #3ac824;
+  /*--bs-card-color: #ffffff;*/
+  /*--bs-card-border-color: #2a2a2a;*/
+  --bs-card-border-color: #e30000;
+}
+.roboto-slab-light {
+  font-family: "Roboto Slab", serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.roboto-slab-regular {
+  font-family: "Roboto Slab", serif;
+  font-optical-sizing: auto;
+  /*font-weight: 700;*/
+  font-style: normal;
+}
+
+.roboto-slab-medium {
+  font-family: "Roboto Slab", serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.roboto-slab-bold {
+  font-family: "Roboto Slab", serif;
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  /* display: none; <- Crashes Chrome on hover */
+  -webkit-appearance: none;
+  margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+}
+
+input[type=number] {
+  -moz-appearance:textfield; /* Firefox */
+}
