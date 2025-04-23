@@ -19,14 +19,17 @@
       <div>
         <div class="row">
           <div class="col-1">Nº</div>
+          <div class="col">Juros</div>
           <div class="col">Valor</div>
           <div class="col">Amortizado</div>
-          <div class="col">Juros</div>
           <div class="col">Saldo</div>
         </div>
         <div class="row" v-for="installment of installments" :key="installment.i">
           <div class="col-1">
             {{installment.i}}
+          </div>
+          <div class="col">
+            {{installment.fee}}
           </div>
           <div class="col">
             {{installment.installment.formatted}}
@@ -38,9 +41,6 @@
               {{installment.amortization}}
             </span>
             <span v-else>-</span>
-          </div>
-          <div class="col">
-            {{installment.fee}}
           </div>
           <div class="col">
             {{installment.balance.formatted}}
@@ -72,7 +72,7 @@ function calc() {
 
   calcAmortizations(
     12000,
-    2
+    4
   )
 
   // installments.value = installmentsObject;
@@ -132,11 +132,15 @@ function calcAmortizations(
     let times = 0;
     let total = 0;
 
+    console.log(`\nYEAR: ${year}`)
+
     for (const inst of installments.value) {
       // ignorar já calculados para outros anos
       if (!inst.amortizationYear) {
-        times += 1;
-        const dueDate = inst.i - (deductedMonths + times);
+
+        console.log(times)
+        // const dueDate = inst.i - (deductedMonths + times);
+        const dueDate = inst.i - (deductedMonths);
         const amortizationInstallment = formatNumber(
           // =L188 / (1 + $L$5) ^ (H188)
           inst.installment.value / Math.pow(1 + formBaseComponent.value.monthlyFee, dueDate)
@@ -148,6 +152,7 @@ function calcAmortizations(
           break;
         }
 
+        times++;
         total += amortizationInstallment.value;
 
         inst.amortizationDueDate = dueDate;
