@@ -1,4 +1,10 @@
 {
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": false,
+    "strictFunctionTypes": true
+  },
   "files": [],
   "references": [
     {
