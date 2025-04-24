@@ -3,9 +3,9 @@
     <div class="card-header">Financiamento</div>
     <div class="card-body">
       <div class="row">
-        <div>
-          {{exposed}}
-        </div>
+<!--        <div>-->
+<!--          {{exposed}}-->
+<!--        </div>-->
         <div class="col">
           <div class="input-group mb-3">
             <span class="input-group-text">R$</span>

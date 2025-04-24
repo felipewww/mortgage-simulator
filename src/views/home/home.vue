@@ -50,9 +50,21 @@
           </div>
           <div class="col">
             <span v-if="installment.amortization">
-              {{installment.amortizationYear}} >>
-              {{installment.amortizationDueDate}} >>
-              {{installment.amortization}}
+              <span class="amortization-info mr-1">
+                <span
+                  class="badge text-dark"
+                  :style="getRandomColor(installment.amortizationYear)"
+                >
+                  {{installment.amortizationYear}}
+                </span>
+                <span
+                  class="badge rounded-pill text-dark"
+                  :style="getRandomColor(installment.amortizationYear)"
+                >
+                  {{installment.amortizationDueDate}}
+                </span>
+              </span>
+              <span class="ml-2">{{installment.amortization}}</span>
             </span>
             <span v-else>-</span>
           </div>
@@ -70,11 +82,38 @@
 import FormBase, {type FormBaseExposedData} from "@/views/home/form-base.vue";
 import {ref} from "vue";
 import {formatNumber, type ValueFormatted} from "@/utils/number/format-number.ts";
+import {getRandomTopRightColor} from "@/utils/random-color.ts";
 
 const formBaseComponent = ref<FormBaseExposedData>(null)
 
 const showCalc = ref(false);
 const balance = ref(0)
+
+type AmortizationColorsType = {
+  [year: string]: {
+    [cssProp: string]: string;
+  }
+}
+
+// const amortizationColors = ref<{ [year: string]: unknown }>({})
+const amortizationColors = ref<AmortizationColorsType>({})
+
+function getRandomColor(
+  yearRef: number,
+) {
+
+  if (amortizationColors.value[yearRef.toString()]) {
+    return amortizationColors.value[yearRef.toString()];
+  }
+
+  const styles: { [key: string]: string; } = {};
+
+  styles.backgroundColor = getRandomTopRightColor()
+
+  amortizationColors.value[yearRef.toString()] = styles
+
+  return styles
+}
 
 function calc() {
   installments.value = [];
@@ -198,3 +237,9 @@ function calcAmortizations(
 }
 
 </script>
+
+<style>
+.test {
+  color: rgba(28, 62, 59, 0.58);
+}
+</style>
