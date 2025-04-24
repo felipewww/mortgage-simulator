@@ -15,109 +15,29 @@
     </div>
 
     <div v-if="showCalc">
-      <div>
-        Total: {{totalAmount}}
-      </div>
-      <div>
-        <div class="row">
-          <div class="col-1">Nº</div>
-          <div class="col">Juros</div>
-          <div class="col">Valor</div>
-          <div class="col">Seguro</div>
-          <div class="col">Taxa</div>
-          <div class="col">Total</div>
-          <div class="col">Amortizado</div>
-          <div class="col">Saldo</div>
-        </div>
-        <div class="row" v-for="installment of installments" :key="installment.i">
-          <div class="col-1">
-            {{installment.i}}
-          </div>
-          <div class="col">
-            {{installment.fee}}
-          </div>
-          <div class="col">
-            {{installment.installment.formatted}}
-          </div>
-          <div class="col">
-            {{installment.insurance.formatted}}
-          </div>
-          <div class="col">
-            {{installment.tax.formatted}}
-          </div>
-          <div class="col">
-            {{installment.totalAmount.formatted}}
-          </div>
-          <div class="col">
-            <span v-if="installment.amortization">
-              <span class="amortization-info mr-1">
-                <span
-                  class="badge text-dark"
-                  :style="getRandomColor(installment.amortizationYear)"
-                >
-                  {{installment.amortizationYear}}
-                </span>
-                <span
-                  class="badge rounded-pill text-dark"
-                  :style="getRandomColor(installment.amortizationYear)"
-                >
-                  {{installment.amortizationDueDate}}
-                </span>
-              </span>
-              <span class="ml-2">{{installment.amortization}}</span>
-            </span>
-            <span v-else>-</span>
-          </div>
-          <div class="col">
-            {{installment.balance.formatted}}
-          </div>
-        </div>
-      </div>
+      <Calcs :installments="installments"></Calcs>
     </div>
   </div>
 </template>
 
 
 <script setup lang="ts">
-import FormBase, {type FormBaseExposedData} from "@/views/home/form-base.vue";
+import FormBase, {type FormBaseExposedData} from "@/views/home/components/form-base.vue";
 import {ref} from "vue";
-import {formatNumber, type ValueFormatted} from "@/utils/number/format-number.ts";
-import {getRandomTopRightColor} from "@/utils/random-color.ts";
+import {formatNumber} from "@/utils/number/format-number.ts";
+import Calcs from "@/views/home/components/calcs.vue";
+import type {Installment} from "@/views/home/installment.type.ts";
 
 const formBaseComponent = ref<FormBaseExposedData>(null)
 
 const showCalc = ref(false);
 const balance = ref(0)
-
-type AmortizationColorsType = {
-  [year: string]: {
-    [cssProp: string]: string;
-  }
-}
-
-// const amortizationColors = ref<{ [year: string]: unknown }>({})
-const amortizationColors = ref<AmortizationColorsType>({})
-
-function getRandomColor(
-  yearRef: number,
-) {
-
-  if (amortizationColors.value[yearRef.toString()]) {
-    return amortizationColors.value[yearRef.toString()];
-  }
-
-  const styles: { [key: string]: string; } = {};
-
-  styles.backgroundColor = getRandomTopRightColor()
-
-  amortizationColors.value[yearRef.toString()] = styles
-
-  return styles
-}
+const installments = ref<Installment[]>([])
+const totalAmount = ref(0)
 
 function calc() {
   installments.value = [];
-  showCalc.value = true;
+
   balance.value = formBaseComponent.value.totalLoan
   generateInstallments(
     formBaseComponent.value.months
@@ -133,24 +53,9 @@ function calc() {
     formBaseComponent.value.amortization.years,
     formBaseComponent.value.amortization.yearStart,
   );
+
+  showCalc.value = true;
 }
-
-type Installment = {
-  i: number,
-  balance: ValueFormatted,
-  fee: string,
-  installment: ValueFormatted,
-  insurance: ValueFormatted,
-  tax: ValueFormatted,
-  totalAmount: ValueFormatted,
-  amortization: string,
-  amortizationYear: number,
-  amortizationDueDate: number,
-}
-
-const installments = ref<Installment[]>([])
-
-const totalAmount = ref(0)
 
 function generateInstallments(
   installmentsCount: number
@@ -188,7 +93,7 @@ function generateInstallments(
 }
 
 function calcAmortizations(
-  dock: number,
+  budget: number,
   alongYears: number,
   yearStart: number,
 ) {
@@ -203,29 +108,26 @@ function calcAmortizations(
     let total = 0;
 
     for (const inst of installments.value) {
-      // ignorar parcela já calculada
+
+      // ignorar parcela já calculada para outro período
       if (!inst.amortizationYear) {
-        const dueDate = inst.i - deductedMonths;
+        const { vp, dueDate } = calcVP(inst, deductedMonths);
 
-        // =L188 / (1 + $L$5) ^ (H188)
-        const instWithAmortizationDiscount = inst.installment.value / Math.pow(1 + formBaseComponent.value.monthlyFee, dueDate)
-
-        const amortizationInstallmentFull = formatNumber(
-          instWithAmortizationDiscount + inst.tax.value + inst.insurance.value
-        )
+        const vpFull = formatNumber(vp + inst.tax.value + inst.insurance.value)
 
         if (
-          (total + amortizationInstallmentFull.value) >= dock
+          (total + vpFull.value) >= budget
         ) {
           break;
         }
 
-        total += amortizationInstallmentFull.value;
+        total += vpFull.value;
 
         inst.amortizationDueDate = dueDate;
         inst.amortizationYear = year
-        inst.amortization = amortizationInstallmentFull.formatted
+        inst.amortization = vpFull.formatted
       }
+
     }
 
     year++;
@@ -234,6 +136,36 @@ function calcAmortizations(
 
   // Reverter de novo para exibir corretamente no front
   installments.value.reverse();
+}
+
+function calcVP(
+  installment: Installment,
+  // número de meses que já se passaram sem pagar essa parcela
+  // ex: vou esperar 2 anos para pagar, então aqui sera 24 meses.
+  deductedMonths: number,
+) {
+  // quanto falta para chegar nessa parcela, exemplo: esperei 2 anos para pagar a parcela nº 50
+  // então é 50 - 24 = 26. Então estou antecipando 26 meses desta parcela.
+  const dueDate = installment.i - deductedMonths;
+  /*
+          Esta fórmula calcula o Valor Presente (VP) de uma parcela, descontado por uma taxa de juros para saber qaunto custará
+          a amortização antecipada
+
+          Valor Presente = Valor Futuro / (1 + taxa) ^ período
+          VP = VF / (1 + TX) ^ P
+
+          Onde:
+          - VP → O vlaor que queremos encontrar, quando custará uma parcela futura se eu pagar antecipado
+          - VF → Valor real da parcela se eu pagar dentro do prazo
+          - TX → taxa de juros mensal (ex: 10.45 aa = 10.45 / 12)
+          - P → representa o número de meses até o recebimento do valor
+        * */
+  const vp = installment.installment.value / Math.pow(1 + formBaseComponent.value.monthlyFee, dueDate)
+
+  return {
+    vp,
+    dueDate
+  }
 }
 
 </script>
