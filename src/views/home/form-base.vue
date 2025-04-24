@@ -1,57 +1,86 @@
 <template>
-  <div class="row">
-    <div class="col">
-      <div class="input-group mb-3">
-        <span class="input-group-text">R$</span>
-        <input type="number" class="form-control" placeholder="Valor do imóvel" v-model="form.price">
-        <span class="input-group-text">.000,00</span>
-      </div>
-    </div>
+  <div class="card mb-3">
+    <div class="card-header">Financiamento</div>
+    <div class="card-body">
+      <div class="row">
+        <div>
+          {{exposed}}
+        </div>
+        <div class="col">
+          <div class="input-group mb-3">
+            <span class="input-group-text">R$</span>
+            <input type="number" class="form-control" placeholder="Valor do imóvel" v-model="form.price">
+            <span class="input-group-text">.000,00</span>
+          </div>
+        </div>
 
-    <div class="col">
-      <div class="input-group mb-3">
-        <input type="number" class="form-control" placeholder="Entrada" max="100" min="1" v-model="form.downPaymentPercent">
-        <span class="input-group-text">%</span>
-      </div>
-    </div>
+        <div class="col">
+          <div class="input-group mb-3">
+            <input type="number" class="form-control" placeholder="Entrada" max="100" min="1" v-model="form.downPaymentPercent">
+            <span class="input-group-text">%</span>
+          </div>
+        </div>
 
-    <div class="col">
-      <div class="input-group mb-3">
-        <span class="input-group-text">R$</span>
-        <input type="text" class="form-control" placeholder="Valor entrada" disabled :value="downPayment?.formatted">
-      </div>
-    </div>
+        <div class="col">
+          <div class="input-group mb-3">
+            <span class="input-group-text">R$</span>
+            <input type="text" class="form-control" placeholder="Valor entrada" disabled :value="downPayment?.formatted">
+          </div>
+        </div>
 
-    <div class="col">
-      <div class="input-group mb-3">
-        <span class="input-group-text">% a.a.</span>
-        <input type="number" max="100" min="0" step="0.01" class="form-control" placeholder="Juros ao ano" v-model="form.yearlyFee">
-      </div>
-    </div>
+        <div class="col">
+          <div class="input-group mb-3">
+            <span class="input-group-text">% a.a.</span>
+            <input type="number" max="100" min="0" step="0.01" class="form-control" placeholder="Juros ao ano" v-model="form.yearlyFee">
+          </div>
+        </div>
 
-    <div class="col">
-      <div class="input-group mb-3">
-        <input type="number" max="420" min="2" class="form-control" placeholder="Total em anos" v-model="form.years">
-        <span class="input-group-text">anos</span>
+        <div class="col">
+          <div class="input-group mb-3">
+            <span class="input-group-text">% Seguro a.a.</span>
+            <input type="number" max="100" min="0" step="0.01" class="form-control" placeholder="Juros ao ano" v-model="form.yearlyInsuranceFee">
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="input-group mb-3">
+            <input type="number" max="420" min="2" class="form-control" placeholder="Total em anos" v-model="form.years">
+            <span class="input-group-text">anos</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col">
-<!--      months: {{months}}-->
-<!--      rawInstallment: {{rawInstallment}}-->
+  <div class="card mb-3">
+    <div class="card-header">
+      Aporte anual
     </div>
-    <div class="col">
-<!--      totalLoan: {{totalLoan}}-->
-<!--      form.yearlyFee: {{form.yearlyFee}}-->
-<!--      monthlyFee: {{monthlyFee}}-->
+    <div class="card-body">
+      <div class="row">
+        <div class="col">
+          <div class="input-group mb-3">
+            <span class="input-group-text">R$</span>
+            <input type="text" class="form-control" placeholder="Aporte anual" v-model="amortizationForm.amount">
+          </div>
+        </div>
+        <div class="col">
+          <div class="input-group mb-3">
+            <span class="input-group-text">durante</span>
+            <input type="number" class="form-control" placeholder="Quantos anos" v-model="amortizationForm.years">
+            <span class="input-group-text">anos</span>
+          </div>
+        </div>
+        <div class="col">
+          <div class="input-group mb-3">
+            <span class="input-group-text">após</span>
+            <input type="number" class="form-control" placeholder="Quantos anos" v-model="amortizationForm.yearStart">
+            <span class="input-group-text">anos</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
-<!--  <div class="d-flex justify-content-end">-->
-<!--    <button class="btn btn-info" type="button" :disabled="!isFormFilled()">Calcular</button>-->
-<!--  </div>-->
 </template>
 
 <script setup lang="ts">
@@ -61,28 +90,70 @@ import {formatNumber} from "@/utils/number/format-number.ts";
 
 const route = useRoute()
 
+type QueryParams = {
+  price: string,
+  pct: string,
+  fee: string,
+  years: string,
+  feeInsurance: string,
+  am_a: string,
+  am_y: string,
+  am_ys: string,
+}
+
+const query = computed(() => route.query as QueryParams);
+
 onMounted(() => {
-  if (route.query.price) {
-    form.value.price = parseInt(route.query.price as string);
+  if (query.value.price) {
+    form.value.price = parseInt(query.value.price as string);
   }
 
-  if (route.query.pct) {
-    form.value.downPaymentPercent = parseFloat(route.query.pct as string);
+  if (query.value.pct) {
+    form.value.downPaymentPercent = parseFloat(query.value.pct as string);
   }
 
-  if (route.query.fee) {
-    form.value.yearlyFee = parseFloat(route.query.fee as string);
+  if (query.value.fee) {
+    form.value.yearlyFee = parseFloat(query.value.fee as string);
   }
 
-  if (route.query.years) {
-    form.value.years = parseInt(route.query.years as string);
+  if (query.value.years) {
+    form.value.years = parseInt(query.value.years as string);
   }
+
+  if (query.value.feeInsurance) {
+    form.value.yearlyInsuranceFee = parseFloat(query.value.feeInsurance as string);
+  }
+
+  if (query.value.am_a) {
+    amortizationForm.value.amount = parseInt(query.value.am_a as string);
+  }
+
+  if (query.value.am_y) {
+    amortizationForm.value.years = parseInt(query.value.am_y as string);
+  }
+
+  if (query.value.am_ys) {
+    amortizationForm.value.yearStart = parseInt(query.value.am_ys as string);
+  }
+})
+
+type AmortizationFormData = {
+  amount: number,
+  years: number,
+  yearStart: number,
+}
+
+const amortizationForm = ref<AmortizationFormData>({
+  amount: null,
+  years: null,
+  yearStart: null,
 })
 
 type FormData = {
   price: number;
   downPaymentPercent: number;
   yearlyFee: number;
+  yearlyInsuranceFee: number;
   years: number
 }
 
@@ -90,6 +161,7 @@ const form = ref<FormData>({
   price: null,
   downPaymentPercent: null,
   yearlyFee: null,
+  yearlyInsuranceFee: null,
   years: null,
 })
 
@@ -160,6 +232,14 @@ const monthlyFee = computed(() => {
   return null;
 })
 
+const monthlyInsuranceFee = computed(() => {
+  if (form.value.yearlyInsuranceFee) {
+    return form.value.yearlyInsuranceFee
+  }
+
+  return null;
+})
+
 function isFormFilled(): boolean {
   return !!(
     form.value.price
@@ -171,21 +251,25 @@ function isFormFilled(): boolean {
 
 export type FormBaseExposedData = {
   monthlyFee: ComputedRef<number | null>;
+  monthlyInsuranceFee: ComputedRef<number | null>;
   rawInstallment: ComputedRef<number | null>;
   months: ComputedRef<number | null>;
   totalLoan: ComputedRef<number | null>;
   isFormFilled: () => boolean;
+  amortization: AmortizationFormData
 }
 
-const exposed: FormBaseExposedData = {
+const exposed = ref<FormBaseExposedData>({
   monthlyFee,
+  monthlyInsuranceFee,
   rawInstallment,
   months,
   totalLoan,
   isFormFilled: isFormFilled,
-}
+  amortization: amortizationForm.value,
+})
 
-defineExpose<FormBaseExposedData>(exposed)
+defineExpose(exposed.value)
 </script>
 
 <style scoped>

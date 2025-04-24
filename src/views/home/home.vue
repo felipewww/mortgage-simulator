@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h1>Sac/Price simulator</h1>
+    <h1>SAC Simulator</h1>
     <div class="mb-5"></div>
     <FormBase ref="formBaseComponent" />
     <div class="d-flex justify-content-end">
@@ -15,12 +15,17 @@
     </div>
 
     <div v-if="showCalc">
-<!--      balance: {{balance}}-->
+      <div>
+        Total: {{totalAmount}}
+      </div>
       <div>
         <div class="row">
           <div class="col-1">Nº</div>
           <div class="col">Juros</div>
           <div class="col">Valor</div>
+          <div class="col">Seguro</div>
+          <div class="col">Taxa</div>
+          <div class="col">Total</div>
           <div class="col">Amortizado</div>
           <div class="col">Saldo</div>
         </div>
@@ -33,6 +38,15 @@
           </div>
           <div class="col">
             {{installment.installment.formatted}}
+          </div>
+          <div class="col">
+            {{installment.insurance.formatted}}
+          </div>
+          <div class="col">
+            {{installment.tax.formatted}}
+          </div>
+          <div class="col">
+            {{installment.totalAmount.formatted}}
           </div>
           <div class="col">
             <span v-if="installment.amortization">
@@ -70,12 +84,16 @@ function calc() {
     formBaseComponent.value.months
   );
 
+  if (
+    formBaseComponent.value.amortization.years
+    && formBaseComponent.value.amortization.amount
+  ) {
+  }
   calcAmortizations(
-    12000,
-    4
-  )
-
-  // installments.value = installmentsObject;
+    formBaseComponent.value.amortization.amount,
+    formBaseComponent.value.amortization.years,
+    formBaseComponent.value.amortization.yearStart,
+  );
 }
 
 type Installment = {
@@ -83,12 +101,17 @@ type Installment = {
   balance: ValueFormatted,
   fee: string,
   installment: ValueFormatted,
+  insurance: ValueFormatted,
+  tax: ValueFormatted,
+  totalAmount: ValueFormatted,
   amortization: string,
   amortizationYear: number,
   amortizationDueDate: number,
 }
 
 const installments = ref<Installment[]>([])
+
+const totalAmount = ref(0)
 
 function generateInstallments(
   installmentsCount: number
@@ -99,20 +122,27 @@ function generateInstallments(
 
     // valor total, JUROS + PARCELA
     const installment = formatNumber(fee.value + formBaseComponent.value.rawInstallment);
-
-    const newBalance = formatNumber(balance.value - formBaseComponent.value.rawInstallment);
-    // saldo - APENAS desconta o valor da parcela
-    balance.value = newBalance.value
+    const insurance = formatNumber(installment.value * (formBaseComponent.value.monthlyInsuranceFee/100))
+    const tax = formatNumber(25);
 
     installments.value.push({
       i,
-      balance: newBalance,
+      balance: formatNumber(balance.value),
       fee: fee.formatted,
-      installment: installment,
+      installment,
+      insurance,
+      tax,
+      totalAmount: formatNumber(installment.value + insurance.value + tax.value),
       amortization: null,
       amortizationYear: null,
       amortizationDueDate: null,
     });
+
+    // const newBalance = formatNumber(balance.value - formBaseComponent.value.rawInstallment);
+    // saldo - APENAS desconta o valor da parcela
+    balance.value = balance.value - formBaseComponent.value.rawInstallment
+
+    totalAmount.value += installment.value
 
     i++;
   }
@@ -120,48 +150,47 @@ function generateInstallments(
 
 function calcAmortizations(
   dock: number,
-  years: number,
+  alongYears: number,
+  yearStart: number,
 ) {
-  let year = 1;
+  let year = yearStart ?? 1;
 
   installments.value.reverse();
 
-  while (year <= years) {
+  let i = 0;
+  while (i < alongYears) {
 
     const deductedMonths = 12 * year;
-    let times = 0;
     let total = 0;
 
-    console.log(`\nYEAR: ${year}`)
-
     for (const inst of installments.value) {
-      // ignorar já calculados para outros anos
+      // ignorar parcela já calculada
       if (!inst.amortizationYear) {
+        const dueDate = inst.i - deductedMonths;
 
-        console.log(times)
-        // const dueDate = inst.i - (deductedMonths + times);
-        const dueDate = inst.i - (deductedMonths);
-        const amortizationInstallment = formatNumber(
-          // =L188 / (1 + $L$5) ^ (H188)
-          inst.installment.value / Math.pow(1 + formBaseComponent.value.monthlyFee, dueDate)
+        // =L188 / (1 + $L$5) ^ (H188)
+        const instWithAmortizationDiscount = inst.installment.value / Math.pow(1 + formBaseComponent.value.monthlyFee, dueDate)
+
+        const amortizationInstallmentFull = formatNumber(
+          instWithAmortizationDiscount + inst.tax.value + inst.insurance.value
         )
 
         if (
-          (total + amortizationInstallment.value) >= dock
+          (total + amortizationInstallmentFull.value) >= dock
         ) {
           break;
         }
 
-        times++;
-        total += amortizationInstallment.value;
+        total += amortizationInstallmentFull.value;
 
         inst.amortizationDueDate = dueDate;
         inst.amortizationYear = year
-        inst.amortization = amortizationInstallment.formatted
+        inst.amortization = amortizationInstallmentFull.formatted
       }
     }
 
     year++;
+    i++;
   }
 
   // Reverter de novo para exibir corretamente no front
