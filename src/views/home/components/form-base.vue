@@ -86,7 +86,7 @@
 <script setup lang="ts">
 import {computed, type ComputedRef, onMounted, ref} from "vue";
 import {useRoute} from "vue-router";
-import {formatNumber} from "@/utils/number/format-number.ts";
+import {formatNumber, type ValueFormatted} from "@/utils/number/format-number.ts";
 
 const route = useRoute()
 
@@ -255,6 +255,7 @@ export type FormBaseExposedData = {
   rawInstallment: ComputedRef<number | null>;
   months: ComputedRef<number | null>;
   totalLoan: ComputedRef<number | null>;
+  downPayment: ComputedRef<ValueFormatted>;
   isFormFilled: () => boolean;
   amortization: AmortizationFormData
 }
@@ -265,6 +266,7 @@ const exposed = ref<FormBaseExposedData>({
   rawInstallment,
   months,
   totalLoan,
+  downPayment,
   isFormFilled: isFormFilled,
   amortization: amortizationForm.value,
 })
