@@ -1,5 +1,5 @@
 <template>
-  <input @input="reformat" type="text" class="form-control" v-model="v.formatted">
+  <input @keydown="blockNonDigits" @input="reformat" type="text" class="form-control" v-model="v.formatted">
 </template>
 
 <script setup lang="ts">
@@ -19,9 +19,17 @@ const v = computed(() => {
   return formatNumber(props.modelValue)
 })
 
+function blockNonDigits(e: KeyboardEvent) {
+  if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+    e.preventDefault()
+    return;
+  }
+}
+
 function reformat() {
+
+
   const nv = v.value.formatted.replace(/[^0-9]/g, "")
-  console.log(nv)
 
   let nvNumber = parseFloat(nv)
 

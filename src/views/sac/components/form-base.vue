@@ -30,7 +30,16 @@
             <input type="text" class="form-control" placeholder="Valor entrada" disabled :value="downPayment?.formatted">
           </div>
         </div>
+        <div class="col">
+          <label class="form-label">Prazo</label>
+          <div class="input-group mb-3">
+            <input type="number" max="420" min="2" class="form-control" placeholder="Total em anos" v-model="form.years">
+            <span class="input-group-text">anos</span>
+          </div>
+        </div>
+      </div>
 
+      <div class="row">
         <div class="col">
           <label class="form-label">% Juros a.a.</label>
           <div class="input-group mb-3">
@@ -48,18 +57,10 @@
         </div>
 
         <div class="col">
-          <label class="form-label">Taxas {{form.tax}}</label>
+          <label class="form-label">Taxas</label>
           <div class="input-group mb-3">
             <span class="input-group-text">R$</span>
             <CurrencyInput v-model="form.tax"></CurrencyInput>
-          </div>
-        </div>
-
-        <div class="col">
-          <label class="form-label">Prazo</label>
-          <div class="input-group mb-3">
-            <input type="number" max="420" min="2" class="form-control" placeholder="Total em anos" v-model="form.years">
-            <span class="input-group-text">anos</span>
           </div>
         </div>
       </div>
