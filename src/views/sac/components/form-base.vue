@@ -165,7 +165,7 @@ type AmortizationFormData = {
 }
 
 const amortizationForm = ref<AmortizationFormData>({
-  amount: null,
+  amount: 0,
   years: null,
   yearStart: null,
 })

@@ -16,10 +16,10 @@
           {{installment.i}}
         </div>
         <div class="col">
-          {{installment.fee}}
+          {{installment.installmentFee.formatted}}
         </div>
         <div class="col">
-          {{installment.installment.formatted}}
+          {{installment.installmentFull.formatted}}
         </div>
         <div class="col">
           {{installment.insurance.formatted}}
@@ -31,22 +31,22 @@
           {{installment.totalAmount.formatted}}
         </div>
         <div class="col">
-            <span v-if="installment.amortization">
+            <span v-if="installment.amortization.exists">
               <span class="amortization-info mr-1">
                 <span
                   class="badge text-dark"
-                  :style="getRandomColor(installment.amortizationYear)"
+                  :style="getRandomColor(installment.amortization.year)"
                 >
-                  {{installment.amortizationYear}}
+                  {{installment.amortization.year}}
                 </span>
                 <span
                   class="badge rounded-pill text-dark"
-                  :style="getRandomColor(installment.amortizationYear)"
+                  :style="getRandomColor(installment.amortization.year)"
                 >
-                  {{installment.amortizationDueDate}}
+                  {{installment.amortization.dueDate}}
                 </span>
               </span>
-              <span class="ml-2">{{installment.amortization}}</span>
+              <span class="ml-2">{{installment.amortization.vp.formatted}}</span>
             </span>
           <span v-else>-</span>
         </div>
@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import {ref} from "vue";
 import {getRandomTopRightColor} from "@/utils/random-color.ts";
-import type {Installment} from "@/views/sac/installment.type.ts";
+import {Installment} from "@/domain/installment";
 
 defineProps({
   installments: {
