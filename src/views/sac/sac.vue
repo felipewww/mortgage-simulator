@@ -14,7 +14,7 @@
       </button>
     </div>
 
-    <div v-if="showCalc">
+    <div v-if="showCalc" class="mt-3">
       <div class="row mb-4">
         <div class="col">
           <div class="card">
@@ -90,9 +90,24 @@
               </div>
             </div>
             <div class="card-body">
-              <div>Last: {{amortizationLast}}</div>
-              <div>amortizationParallel: {{amortizationParallel}}</div>
-              <div>amortizationRest: {{amortizationRest}}</div>
+              <InfoRow
+                title="Pago em dia"
+                :content="`${amortizationParallel} (${parallelYears} anos) - (${parallelPercent}%)`"
+                bg-color="info"
+                text-color="text-black"
+              />
+              <InfoRow
+                title="Amortizado"
+                :content="`${amortizationCount} (${amortizationYears} anos) - (${amortizationPercent}%)`"
+                bg-color="success"
+                text-color="text-white"
+              />
+              <InfoRow
+                title="Restante"
+                :content="`${amortizationRest} (${restYears} anos) - (${restPercent}%)`"
+                bg-color="warning"
+                text-color="text-black"
+              />
             </div>
           </div>
 
@@ -160,7 +175,19 @@ function calc() {
     formBaseComponent.value.amortization.years
     && formBaseComponent.value.amortization.amount
   ) {
-    nextAfterAmortization.value = formBaseComponent.value.amortization.years * 12 + 1;
+    // apos 2 anos = 24
+    // apos 3 anos = 36
+    // ou seja, ja se passaram 48 parcelas PARALELAMENTE enquanto eu quitava, a próxima será a 49 (ja no 4º ano, sem amortizar)
+
+    // para 180 meses, iniciando no ano 2 durante 3 anos (anos 2, 3 e 4 amortizando)
+    // ano 1 - 12 meses - NÃO amortiza
+    // ano 2 (ano inicio) - 24 meses - amortiza | deductionMonth = 180 - 24 = 156
+    // ano 3 - 36 meses - amortiza
+    // ano 4 (ano fim) - 48 meses - amortiza
+    // próxima parcela será 49
+    // (anoInicio - 1) + anoFim
+    const yearsEndAmortization = (formBaseComponent.value.amortization.yearStart - 1) + formBaseComponent.value.amortization.years
+    nextAfterAmortization.value = yearsEndAmortization * 12 + 1;
 
     calcAmortizations(
       formBaseComponent.value.amortization.amount,
@@ -256,7 +283,37 @@ function calcAmortizations(
   installments.value.reverse();
 }
 
+const amortizationPercent = ref(0);
+const amortizationYears = ref(0);
+const parallelPercent = ref(0);
+const parallelYears = ref(0);
+const restPercent = ref(0);
+const restYears = ref(0);
+
 function calcAmortizationRest() {
+
+  amortizationPercent.value = parseFloat(
+    ((amortizationCount.value * 100) / formBaseComponent.value.months).toFixed(2)
+  );
+
+  amortizationYears.value =  parseFloat(
+    (amortizationCount.value / 12).toFixed(1)
+  )
+
+  parallelPercent.value = parseFloat(
+    ((amortizationParallel.value * 100) / formBaseComponent.value.months).toFixed(2)
+  );
+
+  parallelYears.value =  parseFloat(
+    (amortizationParallel.value / 12).toFixed(1)
+  )
+
+  restPercent.value = 100 - (amortizationPercent.value + parallelPercent.value)
+
+  restYears.value =  parseFloat(
+    (amortizationRest.value / 12).toFixed(1)
+  )
+
   let i = nextAfterAmortization.value;
   let amount = 0;
   while (i < amortizationLast.value - 1) {
