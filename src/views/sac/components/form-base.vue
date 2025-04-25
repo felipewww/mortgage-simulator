@@ -7,6 +7,7 @@
 <!--          {{exposed}}-->
 <!--        </div>-->
         <div class="col">
+          <label class="form-label">Valor do imóvel</label>
           <div class="input-group mb-3">
             <span class="input-group-text">R$</span>
             <input type="number" class="form-control" placeholder="Valor do imóvel" v-model="form.price">
@@ -15,6 +16,7 @@
         </div>
 
         <div class="col">
+          <label class="form-label">% de entrada</label>
           <div class="input-group mb-3">
             <input type="number" class="form-control" placeholder="Entrada" max="100" min="1" v-model="form.downPaymentPercent">
             <span class="input-group-text">%</span>
@@ -22,6 +24,7 @@
         </div>
 
         <div class="col">
+          <label class="form-label">Entrada calculada</label>
           <div class="input-group mb-3">
             <span class="input-group-text">R$</span>
             <input type="text" class="form-control" placeholder="Valor entrada" disabled :value="downPayment?.formatted">
@@ -29,20 +32,31 @@
         </div>
 
         <div class="col">
+          <label class="form-label">% Juros a.a.</label>
           <div class="input-group mb-3">
-            <span class="input-group-text">% a.a.</span>
             <input type="number" max="100" min="0" step="0.01" class="form-control" placeholder="Juros ao ano" v-model="form.yearlyFee">
+            <span class="input-group-text">%</span>
           </div>
         </div>
 
         <div class="col">
+          <label class="form-label">% Seguro a.a.</label>
           <div class="input-group mb-3">
-            <span class="input-group-text">% Seguro a.a.</span>
             <input type="number" max="100" min="0" step="0.01" class="form-control" placeholder="Juros ao ano" v-model="form.yearlyInsuranceFee">
+            <span class="input-group-text">%</span>
           </div>
         </div>
 
         <div class="col">
+          <label class="form-label">Taxas {{form.tax}}</label>
+          <div class="input-group mb-3">
+            <span class="input-group-text">R$</span>
+            <CurrencyInput v-model="form.tax"></CurrencyInput>
+          </div>
+        </div>
+
+        <div class="col">
+          <label class="form-label">Prazo</label>
           <div class="input-group mb-3">
             <input type="number" max="420" min="2" class="form-control" placeholder="Total em anos" v-model="form.years">
             <span class="input-group-text">anos</span>
@@ -54,27 +68,27 @@
 
   <div class="card mb-3">
     <div class="card-header">
-      Aporte anual
+      Plano de Amortização
     </div>
     <div class="card-body">
       <div class="row">
         <div class="col">
           <div class="input-group mb-3">
             <span class="input-group-text">R$</span>
-            <input type="text" class="form-control" placeholder="Aporte anual" v-model="amortizationForm.amount">
-          </div>
-        </div>
-        <div class="col">
-          <div class="input-group mb-3">
-            <span class="input-group-text">durante</span>
-            <input type="number" class="form-control" placeholder="Quantos anos" v-model="amortizationForm.years">
-            <span class="input-group-text">anos</span>
+            <CurrencyInput v-model="amortizationForm.amount"></CurrencyInput>
           </div>
         </div>
         <div class="col">
           <div class="input-group mb-3">
             <span class="input-group-text">após</span>
             <input type="number" class="form-control" placeholder="Quantos anos" v-model="amortizationForm.yearStart">
+            <span class="input-group-text">anos</span>
+          </div>
+        </div>
+        <div class="col">
+          <div class="input-group mb-3">
+            <span class="input-group-text">durante</span>
+            <input type="number" class="form-control" placeholder="Quantos anos" v-model="amortizationForm.years">
             <span class="input-group-text">anos</span>
           </div>
         </div>
@@ -87,6 +101,7 @@
 import {computed, type ComputedRef, onMounted, ref} from "vue";
 import {useRoute} from "vue-router";
 import {formatNumber, type ValueFormatted} from "@/utils/number/format-number.ts";
+import CurrencyInput from "@/components/currency-input.vue";
 
 const route = useRoute()
 
@@ -99,6 +114,7 @@ type QueryParams = {
   am_a: string,
   am_y: string,
   am_ys: string,
+  tax: string,
 }
 
 const query = computed(() => route.query as QueryParams);
@@ -122,6 +138,10 @@ onMounted(() => {
 
   if (query.value.feeInsurance) {
     form.value.yearlyInsuranceFee = parseFloat(query.value.feeInsurance as string);
+  }
+
+  if (query.value.tax) {
+    form.value.tax = parseFloat(query.value.tax as string)
   }
 
   if (query.value.am_a) {
@@ -154,15 +174,17 @@ type FormData = {
   downPaymentPercent: number;
   yearlyFee: number;
   yearlyInsuranceFee: number;
+  tax: number;
   years: number
 }
 
 const form = ref<FormData>({
-  price: null,
-  downPaymentPercent: null,
-  yearlyFee: null,
-  yearlyInsuranceFee: null,
-  years: null,
+  price: 0,
+  downPaymentPercent: 0,
+  yearlyFee: 0,
+  yearlyInsuranceFee: 0,
+  tax: 0,
+  years: 0,
 })
 
 // Valor total do imovel
@@ -240,6 +262,10 @@ const monthlyInsuranceFee = computed(() => {
   return null;
 })
 
+const tax = computed(() => {
+  return form.value.tax;
+})
+
 function isFormFilled(): boolean {
   return !!(
     form.value.price
@@ -257,6 +283,7 @@ export type FormBaseExposedData = {
   totalLoan: ComputedRef<number | null>;
   downPayment: ComputedRef<ValueFormatted>;
   isFormFilled: () => boolean;
+  tax: ComputedRef<number | null>;
   amortization: AmortizationFormData
 }
 
@@ -268,6 +295,7 @@ const exposed = ref<FormBaseExposedData>({
   totalLoan,
   downPayment,
   isFormFilled: isFormFilled,
+  tax,
   amortization: amortizationForm.value,
 })
 

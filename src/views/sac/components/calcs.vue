@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import {ref} from "vue";
 import {getRandomTopRightColor} from "@/utils/random-color.ts";
-import type {Installment} from "@/views/home/installment.type.ts";
+import type {Installment} from "@/views/sac/installment.type.ts";
 
 defineProps({
   installments: {
