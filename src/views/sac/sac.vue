@@ -16,103 +16,66 @@
 
     <div v-if="showCalc" class="mt-3">
       <div class="row mb-4">
-        <div class="col">
-          <div class="card">
-            <div class="card-header d-flex justify-content-between">
-              <div>
-                Financiado
-              </div>
-              <div>
-                <div class="badge bg-primary">R$ {{formatNumber(formBaseComponent.totalLoan).formatted}}</div>
-              </div>
-            </div>
-            <div class="card-body">
-              <InfoRow
-                title="Total Parcelas"
-                :content="`R$ ${formatNumber(totalAmount).formatted}`"
-                bg-color="info"
-              />
-              <InfoRow
-                title="Taxas e Seguros"
-                :content="`R$ ${formatNumber(totalTaxesNInsurance).formatted}`"
-                bg-color="warning"
-              />
-              <InfoRow
-                title="Total + Entrada"
-                :content="`R$ ${formatNumber(formBaseComponent.downPayment.value + totalAmount + totalTaxesNInsurance).formatted}`"
-                bg-color="warning"
-              />
-            </div>
+        <CardSummary title="Financiado">
+          <template v-slot:tag>
+            R$ {{formatNumber(formBaseComponent.totalLoan).formatted}}
+          </template>
+          <div>
+            <InfoRow
+              title="Total Parcelas"
+              bg-color="info"
+            >
+              <div>R$ {{formatNumber(totalAmount).formatted}}</div>
+            </InfoRow>
+            <InfoRow
+              title="Taxas e Seguros"
+              bg-color="warning"
+            >
+              <div>R$ {{formatNumber(totalTaxesNInsurance).formatted}}</div>
+            </InfoRow>
+            <InfoRow
+              title="Total + Entrada"
+              bg-color="warning"
+            >
+              <div>R$ {{formatNumber(formBaseComponent.downPayment.value + totalAmount + totalTaxesNInsurance).formatted}}</div>
+            </InfoRow>
           </div>
-        </div>
+        </CardSummary>
 
-        <div class="col">
-          <!-- CARD AMORTIZAÇÃO -->
-          <div class="card">
-            <div class="card-header d-flex justify-content-between">
-              <div>
-                Amortização
-              </div>
-              <div>
-                <div class="badge bg-primary">{{amortizationCount}} parcelas</div>
-              </div>
-            </div>
-            <div class="card-body">
-              <InfoRow
-                title="parcelas"
-                :content="`R$ ${formatNumber(amortizationPaidAmount).formatted}`"
-                bg-color="info"
-              />
-              <InfoRow
-                title="taxas e juros"
-                :content="`R$ ${formatNumber(amortizationTaxesNInsurance).formatted}`"
-                bg-color="warning"
-              />
-              <InfoRow
-                title="economia"
-                :content="`R$ ${formatNumber(amortizationDiff).formatted}`"
-                bg-color="success"
-                text-color="text-white"
-              />
-            </div>
+        <CardSummary title="Amortização">
+          <template v-slot:tag>{{amortizationCount}} parcelas</template>
+          <div>
+            <InfoRow title="parcelas" bg-color="info">
+              <div>R$ {{formatNumber(amortizationPaidAmount).formatted}}</div>
+            </InfoRow>
+            <InfoRow title="taxas e juros" bg-color="warning">
+              <div>R$ {{formatNumber(amortizationTaxesNInsurance).formatted}}</div>
+            </InfoRow>
+            <InfoRow title="economia" bg-color="success" text-color="text-white">
+              <div>R$ {{formatNumber(amortizationDiff).formatted}}</div>
+            </InfoRow>
           </div>
-          <!-- CARD AMORTIZAÇÃO -->
-        </div>
+        </CardSummary>
 
-        <div class="col">
-          <div class="card">
-            <div class="card-header d-flex justify-content-between">
-              <div>
-                Pós Amortização
-              </div>
-              <div>
-                <div class="badge bg-primary">Restam {{amortizationRest}} parcelas ({{amortizationParallel+1}} / {{amortizationLast-1}})</div>
-              </div>
-            </div>
-            <div class="card-body">
-              <InfoRow
-                title="Pago em dia"
-                :content="`${amortizationParallel} (${parallelYears} anos) - (${parallelPercent}%)`"
-                bg-color="info"
-                text-color="text-black"
-              />
-              <InfoRow
-                title="Amortizado"
-                :content="`${amortizationCount} (${amortizationYears} anos) - (${amortizationPercent}%)`"
-                bg-color="success"
-                text-color="text-white"
-              />
-              <InfoRow
-                title="Restante"
-                :content="`${amortizationRest} (${restYears} anos) - (${restPercent}%)`"
-                bg-color="warning"
-                text-color="text-black"
-              />
-            </div>
+        <CardSummary title="Pós Amortização">
+          <template v-slot:tag>
+            Restam {{amortizationRest}} parcelas ({{amortizationParallel+1}} / {{amortizationLast-1}})
+          </template>
+          <div>
+            <InfoRow title="Pago em dia" bg-color="info" text-color="text-black">
+              <div>{{amortizationParallel}} ({{parallelYears}} anos) - ({{parallelPercent}}%)</div>
+            </InfoRow>
+            <InfoRow title="Amortizado" bg-color="success" text-color="text-white">
+              <div>{{amortizationCount}} ({{amortizationYears}} anos) | ({{amortizationPercent}}%)</div>
+            </InfoRow>
+            <InfoRow title="Restante" bg-color="warning" text-color="text-black">
+              <div>{{amortizationRest}} ({{restYears}} anos) - ({{restPercent}}%)</div>
+            </InfoRow>
           </div>
-
-        </div>
+        </CardSummary>
       </div>
+
+
       <Calcs :installments="installments"></Calcs>
     </div>
   </div>
@@ -122,10 +85,11 @@
 <script setup lang="ts">
 import FormBase, {type FormBaseExposedData} from "@/views/sac/components/form-base.vue";
 import {computed, ref} from "vue";
-import {formatNumber} from "@/utils/number/format-number.ts";
+import {formatNumber, type ValueFormatted} from "@/utils/number/format-number.ts";
 import Calcs from "@/views/sac/components/calcs.vue";
 import InfoRow from "@/components/info-row.vue";
 import {Installment} from "@/domain/installment";
+import CardSummary from "@/components/card-summary.vue";
 
 const formBaseComponent = ref<FormBaseExposedData>(null)
 
@@ -289,6 +253,7 @@ const parallelPercent = ref(0);
 const parallelYears = ref(0);
 const restPercent = ref(0);
 const restYears = ref(0);
+const restBalance = ref<ValueFormatted>(null);
 
 function calcAmortizationRest() {
 
@@ -312,6 +277,10 @@ function calcAmortizationRest() {
 
   restYears.value =  parseFloat(
     (amortizationRest.value / 12).toFixed(1)
+  )
+
+  restBalance.value = formatNumber(
+    amortizationRest.value * formBaseComponent.value.rawInstallment
   )
 
   let i = nextAfterAmortization.value;

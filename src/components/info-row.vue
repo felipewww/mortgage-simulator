@@ -2,6 +2,8 @@
   <div class="d-flex justify-content-between mb-2">
     <span :class="`badge bg-${bgColor} ${textColor}`">{{title}}</span>
     <span>{{content}}</span>
+    <slot></slot>
+    <slot name="other"></slot>
   </div>
 </template>
 
@@ -13,7 +15,7 @@ defineProps({
   },
   content: {
     type: String,
-    required: true,
+    required: false,
   },
   bgColor: {
     type: String,
