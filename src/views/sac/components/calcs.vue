@@ -8,6 +8,7 @@
         <div class="col">Seguro</div>
         <div class="col">Taxa</div>
         <div class="col">Total</div>
+        <div class="col">Felipe</div>
         <div class="col">Amortizado</div>
         <div class="col">Saldo</div>
       </div>
@@ -29,6 +30,9 @@
         </div>
         <div class="col">
           {{installment.totalAmount.formatted}}
+        </div>
+        <div class="col">
+          {{formatNumber(installment.totalAmount.value - 1200).formatted}}
         </div>
         <div class="col">
             <span v-if="installment.amortization.exists">
@@ -62,6 +66,7 @@
 import {ref} from "vue";
 import {getRandomTopRightColor} from "@/utils/random-color.ts";
 import {Installment} from "@/domain/installment";
+import {formatNumber} from "@/utils/number/format-number.ts";
 
 defineProps({
   installments: {
