@@ -15,6 +15,7 @@ export class Installment {
   public readonly insurance: ValueFormatted;
   public readonly tax: ValueFormatted;
   public readonly balance: ValueFormatted;
+  public readonly totalAmount: ValueFormatted;
 
   public amortization: TypeAmortization = {
     exists: false,
@@ -36,10 +37,7 @@ export class Installment {
     this.insurance = formatNumber(this.installmentFull.value * (monthlyInsuranceFee/100))
     this.tax = formatNumber(taxAmount);
     this.balance = formatNumber(currentBalance);
-  }
-
-  get totalAmount(): ValueFormatted {
-    return formatNumber(
+    this.totalAmount = formatNumber(
       this.installmentFull.value + this.insurance.value + this.tax.value
     )
   }

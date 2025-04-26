@@ -3,7 +3,7 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between">
         <div>
-          Pós Amortização
+          {{title}}
         </div>
         <div>
           <div class="badge bg-primary">

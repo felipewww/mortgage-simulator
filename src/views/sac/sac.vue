@@ -51,6 +51,9 @@
             <InfoRow title="taxas e juros" bg-color="warning">
               <div>R$ {{formatNumber(amortizationTaxesNInsurance).formatted}}</div>
             </InfoRow>
+            <InfoRow title="total" bg-color="info">
+              <div>R$ {{formatNumber(amortizationPaidAmount + amortizationTaxesNInsurance).formatted}}</div>
+            </InfoRow>
             <InfoRow title="economia" bg-color="success" text-color="text-white">
               <div>R$ {{formatNumber(amortizationDiff).formatted}}</div>
             </InfoRow>
@@ -59,17 +62,56 @@
 
         <CardSummary title="Pós Amortização">
           <template v-slot:tag>
-            Restam {{amortizationRest}} parcelas ({{amortizationParallel+1}} / {{amortizationLast-1}})
+            Restam {{amortizationRest}} parcelas ({{nextAfterAmortization}} / {{lastAmortized-1}})
           </template>
           <div>
             <InfoRow title="Pago em dia" bg-color="info" text-color="text-black">
-              <div>{{amortizationParallel}} ({{parallelYears}} anos) - ({{parallelPercent}}%)</div>
+              <div>{{parallelMonths}} ({{parallelYears}} anos) {{parallelPercent}}%</div>
             </InfoRow>
             <InfoRow title="Amortizado" bg-color="success" text-color="text-white">
-              <div>{{amortizationCount}} ({{amortizationYears}} anos) | ({{amortizationPercent}}%)</div>
+              <div>{{amortizationCount}} ({{amortizationYears}} anos) {{amortizationPercent}}%</div>
             </InfoRow>
             <InfoRow title="Restante" bg-color="warning" text-color="text-black">
-              <div>{{amortizationRest}} ({{restYears}} anos) - ({{restPercent}}%)</div>
+              <div>{{amortizationRest}} ({{restYears}} anos) {{restPercent}}%</div>
+            </InfoRow>
+          </div>
+        </CardSummary>
+      </div>
+
+      <div class="row mb-2">
+        <div class="col"></div>
+
+        <CardSummary title="Final">
+          <template v-slot:tag>{{parallelMonths}} meses</template>
+          <div>
+            <InfoRow title="Parcelas" bg-color="warning" text-color="text-black">
+              <div>R$ {{formatNumber(parallelAmount).formatted}}</div>
+            </InfoRow>
+            <InfoRow title="+ Amortização" bg-color="warning" text-color="text-black">
+              <div>R$ {{formatNumber(parallelAndAmortizationAmount).formatted}}</div>
+            </InfoRow>
+            <InfoRow title="+ Entrada" bg-color="warning" text-color="text-black">
+              <div>R$ {{formatNumber(parallelAndAmortizationAndDownAmount).formatted}}</div>
+            </InfoRow>
+            <InfoRow title="+ Saldo" bg-color="warning" text-color="text-black">
+              <div>R$ {{formatNumber(parallelAndAmortizationAndDownAndRestAmount).formatted}}</div>
+            </InfoRow>
+          </div>
+        </CardSummary>
+
+        <CardSummary title="Saldo">
+          <template v-slot:tag>R$ {{restBalance.formatted}}</template>
+          <div>
+            <InfoRow title="Saldo + Juros" bg-color="warning" text-color="text-black">
+              <div>R$ {{restBalanceFull.formatted}}</div>
+            </InfoRow>
+            <InfoRow title="Próxima pc." bg-color="warning" text-color="text-black">
+              <div v-if="installments[nextAfterAmortization - 1]">R$ {{installments[nextAfterAmortization - 1].totalAmount.formatted}}</div>
+              <div v-else>R$ 0,00</div>
+            </InfoRow>
+            <InfoRow title="Última pc." bg-color="warning" text-color="text-black">
+              <div v-if="installments[nextAfterAmortization - 1]">R$ {{installments[lastAmortized-1].installmentFull.formatted}}</div>
+              <div v-else>R$ 0,00</div>
             </InfoRow>
           </div>
         </CardSummary>
@@ -100,16 +142,21 @@ const totalAmount = ref(0)
 const totalTaxesNInsurance = ref(0)
 
 const amortizationDiff   = ref(0);
-const amortizationLast   = ref(0);
+const lastAmortized   = ref(0);
 const amortizationCount   = ref(0);
-const amortizationParallel   = ref(0);
+const parallelMonths   = ref(0);
+const parallelAmount   = ref(0);
 const amortizationPaidAmount   = ref(0);
 const amortizationTaxesNInsurance   = ref(0);
 const nextAfterAmortization = ref(0);
 const amortizationRest   = computed(() => {
-  const last = amortizationLast.value - 1;
+  const last = lastAmortized.value - 1;
   return last - nextAfterAmortization.value;
 })
+
+const parallelAndAmortizationAmount = ref(0);
+const parallelAndAmortizationAndDownAmount = ref(0);
+const parallelAndAmortizationAndDownAndRestAmount = ref(0);
 
 const restAmount = ref(0);
 
@@ -118,13 +165,17 @@ function reset() {
   totalAmount.value = 0;
   totalTaxesNInsurance.value = 0;
   amortizationDiff.value = 0;
-  amortizationLast.value = 0;
+  lastAmortized.value = 0;
   amortizationCount.value = 0;
-  amortizationParallel.value = 0;
+  parallelMonths.value = 0;
+  parallelAmount.value = 0;
   amortizationPaidAmount.value = 0;
   amortizationTaxesNInsurance.value = 0;
   nextAfterAmortization.value = 0;
   restAmount.value = 0;
+  parallelAndAmortizationAmount.value = 0;
+  parallelAndAmortizationAndDownAmount.value = 0;
+  parallelAndAmortizationAndDownAndRestAmount.value = 0;
 }
 
 function calc() {
@@ -139,10 +190,17 @@ function calc() {
     formBaseComponent.value.amortization.years
     && formBaseComponent.value.amortization.amount
   ) {
+    // ex: quitar anualmente
+    // para 180 meses, iniciando no ano 1 durante 3 anos (anos 1, 2 e 3 amortizando)
+    // apos 1 ano (inicio da amortização) = 12 meses | deductionMonth = 180 - 12 = 168
     // apos 2 anos = 24
-    // apos 3 anos = 36
-    // ou seja, ja se passaram 48 parcelas PARALELAMENTE enquanto eu quitava, a próxima será a 49 (ja no 4º ano, sem amortizar)
+    // apos 3 anos (ano fim) = 36
+    // ou seja, ja se passaram 36 parcelas PARALELAMENTE enquanto eu quitava, a próxima será a 37 (ja no 4º ano, sem amortizar)
 
+    // ex: juntar dinheiro e quitar de uma vez após 3 anos
+    // para 180 meses, iniciando no ano 3, durante 1 ano
+
+    // ex:
     // para 180 meses, iniciando no ano 2 durante 3 anos (anos 2, 3 e 4 amortizando)
     // ano 1 - 12 meses - NÃO amortiza
     // ano 2 (ano inicio) - 24 meses - amortiza | deductionMonth = 180 - 24 = 156
@@ -161,40 +219,53 @@ function calc() {
 
     calcAmortizationRest();
 
-    showCalc.value = true;
+    calcParallelAmount();
+
+    parallelAndAmortizationAmount.value = parallelAmount.value + amortizationPaidAmount.value + amortizationTaxesNInsurance.value;
+    parallelAndAmortizationAndDownAmount.value = parallelAndAmortizationAmount.value + formBaseComponent.value.downPayment.value;
+    parallelAndAmortizationAndDownAndRestAmount.value = parallelAndAmortizationAndDownAmount.value + restBalanceFull.value.value
+
   }
+
+  showCalc.value = true;
+}
+
+function calcParallelAmount() {
+  let i = 0;
+  let amount = 0;
+  while (i < parallelMonths.value) {
+    amount += installments.value[i].totalAmount.value;
+    i++;
+  }
+
+  parallelAmount.value = amount
 }
 
 function generateInstallments(
   installmentsCount: number
 ) {
+  const rawInstallment = formBaseComponent.value.rawInstallment
+  const monthlyFee = formBaseComponent.value.monthlyFee;
+  const monthlyInsuranceFee = formBaseComponent.value.monthlyInsuranceFee;
+
   let i = 1;
   while (i <= installmentsCount) {
-    const fee = formatNumber(formBaseComponent.value.monthlyFee * balance.value)
-
-    // valor total, JUROS + PARCELA
-    const installment = formatNumber(fee.value + formBaseComponent.value.rawInstallment);
-    const insurance = formatNumber(installment.value * (formBaseComponent.value.monthlyInsuranceFee/100))
-    const tax = formatNumber(formBaseComponent.value.tax);
-
-
-    installments.value.push(
-      new Installment(
-        i,
-        formBaseComponent.value.rawInstallment,
-        formBaseComponent.value.monthlyFee,
-        balance.value,
-        formBaseComponent.value.monthlyInsuranceFee,
-        formBaseComponent.value.tax
-      )
+    const inst = new Installment(
+      i,
+      rawInstallment,
+      monthlyFee,
+      balance.value,
+      monthlyInsuranceFee,
+      formBaseComponent.value.tax
     )
 
-    // const newBalance = formatNumber(balance.value - formBaseComponent.value.rawInstallment);
-    // saldo - APENAS desconta o valor da parcela
-    balance.value = balance.value - formBaseComponent.value.rawInstallment
+    installments.value.push(inst)
 
-    totalAmount.value += installment.value
-    totalTaxesNInsurance.value += tax.value + insurance.value
+    // saldo - APENAS desconta o valor da parcela sem juros ou taxas
+    balance.value = balance.value - rawInstallment
+
+    totalAmount.value += inst.installmentFull.value
+    totalTaxesNInsurance.value += inst.tax.value + inst.insurance.value
 
     i++;
   }
@@ -233,12 +304,12 @@ function calcAmortizations(
         amortizationDiff.value += inst.totalAmount.value - vpFull.value;
         amortizationPaidAmount.value += vp;
         amortizationTaxesNInsurance.value += inst.tax.value + inst.insurance.value;
-        amortizationLast.value = inst.i;
+        lastAmortized.value = inst.i;
         amortizationCount.value++;
       }
     }
 
-    amortizationParallel.value = year * 12;
+    parallelMonths.value = year * 12;
     year++;
     i++;
   }
@@ -249,11 +320,20 @@ function calcAmortizations(
 
 const amortizationPercent = ref(0);
 const amortizationYears = ref(0);
+
 const parallelPercent = ref(0);
 const parallelYears = ref(0);
+
 const restPercent = ref(0);
 const restYears = ref(0);
-const restBalance = ref<ValueFormatted>(null);
+const restBalance = ref<ValueFormatted>({
+  value: 0,
+  formatted: 0,
+});
+const restBalanceFull = ref<ValueFormatted>({
+  value: 0,
+  formatted: 0,
+});
 
 function calcAmortizationRest() {
 
@@ -266,11 +346,11 @@ function calcAmortizationRest() {
   )
 
   parallelPercent.value = parseFloat(
-    ((amortizationParallel.value * 100) / formBaseComponent.value.months).toFixed(2)
+    ((parallelMonths.value * 100) / formBaseComponent.value.months).toFixed(2)
   );
 
   parallelYears.value =  parseFloat(
-    (amortizationParallel.value / 12).toFixed(1)
+    (parallelMonths.value / 12).toFixed(1)
   )
 
   restPercent.value = 100 - (amortizationPercent.value + parallelPercent.value)
@@ -285,12 +365,14 @@ function calcAmortizationRest() {
 
   let i = nextAfterAmortization.value;
   let amount = 0;
-  while (i < amortizationLast.value - 1) {
+  while (i < lastAmortized.value - 1) {
     const inst = installments.value[i];
-    // amount += inst.fee + inst.insurance.value + inst.tax;
-    // console.log(installments.value[i])
+    amount += inst.totalAmount.value;
+    // restBalanceFull.value += inst.totalAmount.value;
     i++
   }
+
+  restBalanceFull.value = formatNumber(amount)
 }
 </script>
 
