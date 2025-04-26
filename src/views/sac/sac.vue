@@ -37,7 +37,7 @@
               title="Total + Entrada"
               bg-color="warning"
             >
-              <div>R$ {{formatNumber(formBaseComponent.downPayment.value + totalAmount + totalTaxesNInsurance).formatted}}</div>
+              <div>R$ {{formatNumber(fullAmount).formatted}}</div>
             </InfoRow>
           </div>
         </CardSummary>
@@ -95,6 +95,9 @@
             </InfoRow>
             <InfoRow title="+ Saldo" bg-color="warning" text-color="text-black">
               <div>R$ {{formatNumber(parallelAndAmortizationAndDownAndRestAmount).formatted}}</div>
+            </InfoRow>
+            <InfoRow title="Economia" bg-color="success" text-color="text-black">
+              <div>R$ {{formatNumber(saveAmount).formatted}}</div>
             </InfoRow>
           </div>
         </CardSummary>
@@ -158,6 +161,9 @@ const parallelAndAmortizationAmount = ref(0);
 const parallelAndAmortizationAndDownAmount = ref(0);
 const parallelAndAmortizationAndDownAndRestAmount = ref(0);
 
+const fullAmount = ref(0);
+const saveAmount = ref(0);
+
 const restAmount = ref(0);
 
 function reset() {
@@ -176,6 +182,8 @@ function reset() {
   parallelAndAmortizationAmount.value = 0;
   parallelAndAmortizationAndDownAmount.value = 0;
   parallelAndAmortizationAndDownAndRestAmount.value = 0;
+  fullAmount.value = 0;
+  saveAmount.value = 0;
 }
 
 function calc() {
@@ -190,25 +198,34 @@ function calc() {
     formBaseComponent.value.amortization.years
     && formBaseComponent.value.amortization.amount
   ) {
-    // ex: quitar anualmente
-    // para 180 meses, iniciando no ano 1 durante 3 anos (anos 1, 2 e 3 amortizando)
-    // apos 1 ano (inicio da amortização) = 12 meses | deductionMonth = 180 - 12 = 168
-    // apos 2 anos = 24
-    // apos 3 anos (ano fim) = 36
-    // ou seja, ja se passaram 36 parcelas PARALELAMENTE enquanto eu quitava, a próxima será a 37 (ja no 4º ano, sem amortizar)
 
-    // ex: juntar dinheiro e quitar de uma vez após 3 anos
-    // para 180 meses, iniciando no ano 3, durante 1 ano
+    /**
+     * ex: quitar anualmente
+     * para 180 meses, iniciando no ano 1 durante 3 anos (anos 1, 2 e 3 amortizando)
+     * apos 1 ano (inicio da amortização) = 12 meses | deductionMonth = 180 - 12 = 168
+     * apos 2 anos = 24
+     * apos 3 anos (ano fim) = 36
+     * ou seja, ja se passaram 36 parcelas PARALELAMENTE enquanto eu quitava, a próxima será a 37 (ja no 4º ano, sem amortizar)
+     *
+     * ex: juntar dinheiro e quitar de uma vez após 3 anos
+     * para 180 meses, iniciando no ano 3, durante 1 ano
+     * apos 3 anos (inicio da amortização) = 36 meses | deductionMonth = 180 - 36 = 144
+     *
+     * ex:
+     * para 180 meses, iniciando no ano 2 durante 3 anos (anos 2, 3 e 4 amortizando)
+     * ano 1 - 12 meses - NÃO amortiza
+     * ano 2 (ano inicio) - 24 meses - amortiza | deductionMonth = 180 - 24 = 156
+     * ano 3 - 36 meses - amortiza
+     * ano 4 (ano fim) - 48 meses - amortiza
+     * próxima parcela será 49
+     * (anoInicio - 1) + anoFim
+     *
+     * caso o YEAR_START = ZERO, signfiica que vai quitar a ultima EXATAMENTE JUNTO com a primeiro
+     * então não podemos subtrair Um de YEAR START.
+     * */
+    const consideredYear = formBaseComponent.value.amortization.yearStart === 0 ? 0 : formBaseComponent.value.amortization.yearStart - 1
+    const yearsEndAmortization = (consideredYear) + formBaseComponent.value.amortization.years
 
-    // ex:
-    // para 180 meses, iniciando no ano 2 durante 3 anos (anos 2, 3 e 4 amortizando)
-    // ano 1 - 12 meses - NÃO amortiza
-    // ano 2 (ano inicio) - 24 meses - amortiza | deductionMonth = 180 - 24 = 156
-    // ano 3 - 36 meses - amortiza
-    // ano 4 (ano fim) - 48 meses - amortiza
-    // próxima parcela será 49
-    // (anoInicio - 1) + anoFim
-    const yearsEndAmortization = (formBaseComponent.value.amortization.yearStart - 1) + formBaseComponent.value.amortization.years
     nextAfterAmortization.value = yearsEndAmortization * 12 + 1;
 
     calcAmortizations(
@@ -223,7 +240,9 @@ function calc() {
 
     parallelAndAmortizationAmount.value = parallelAmount.value + amortizationPaidAmount.value + amortizationTaxesNInsurance.value;
     parallelAndAmortizationAndDownAmount.value = parallelAndAmortizationAmount.value + formBaseComponent.value.downPayment.value;
-    parallelAndAmortizationAndDownAndRestAmount.value = parallelAndAmortizationAndDownAmount.value + restBalanceFull.value.value
+    parallelAndAmortizationAndDownAndRestAmount.value = parallelAndAmortizationAndDownAmount.value + restBalanceFull.value.value;
+
+    saveAmount.value = fullAmount.value - parallelAndAmortizationAndDownAndRestAmount.value
 
   }
 
@@ -269,6 +288,8 @@ function generateInstallments(
 
     i++;
   }
+
+  fullAmount.value = formBaseComponent.value.downPayment.value + totalAmount.value + totalTaxesNInsurance.value;
 }
 
 function calcAmortizations(
@@ -276,7 +297,11 @@ function calcAmortizations(
   alongYears: number,
   yearStart: number,
 ) {
-  let year = yearStart ?? 1;
+  let year = parseInt(yearStart);
+
+  // para simular a quitação iniciando exatamente junto com a primeira parcela (ou seja, no ano ZERO, parcela 1)
+  // é necessário considerar o ano ZERO como UM apenas para calcular as parcelas PARALELAS
+  let consideredYear = (year === 0) ? 1 : year;
 
   installments.value.reverse();
 
@@ -309,7 +334,10 @@ function calcAmortizations(
       }
     }
 
-    parallelMonths.value = year * 12;
+    // parallelMonths.value = (year === 0) ? 12 : year * 12;
+    parallelMonths.value = consideredYear * 12;
+
+    consideredYear++;
     year++;
     i++;
   }
@@ -353,7 +381,9 @@ function calcAmortizationRest() {
     (parallelMonths.value / 12).toFixed(1)
   )
 
-  restPercent.value = 100 - (amortizationPercent.value + parallelPercent.value)
+  restPercent.value = parseFloat(
+    (100 - (amortizationPercent.value + parallelPercent.value)).toFixed(2)
+  )
 
   restYears.value =  parseFloat(
     (amortizationRest.value / 12).toFixed(1)
